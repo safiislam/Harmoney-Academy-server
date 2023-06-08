@@ -45,6 +45,12 @@ async function run() {
       res.send(result);
       // console.log(result)
     });
+    app.post('/course', async(req,res)=>{
+      const data = req.body
+      const result = await coursesCollection.insertOne(data)
+      res.send(result)
+
+    })
 
     // user api
     app.post("/users", async (req, res) => {
