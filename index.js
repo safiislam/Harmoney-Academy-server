@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
+const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -21,13 +22,36 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
-
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     const coursesCollection = client.db('summary-school').collection('courses')
+    const usersCollection = client.db('summary-school').collection('users')
 
-    await client.connect();
+    app.post('/jwt', (req,res)=>{
+      const user = req.body 
+      console.log(user)
+      const token = jwt.sign(user,process.env.JWT_SECRET_KEY,{ expiresIn: '1h' })
+      res.send({token})
+    })
+    // user api 
+    app.post('/users',async(req,res)=>{
+      const user = req.body ;
+     
+      const query = {email: user.email}
+      const isExist = await usersCollection.findOne(query)
+      if(isExist){
+        return res.send({error: 'already exist'})
+      }
+      const result = await usersCollection.insertOne(user)
+      res.send(result)
+    })
+    app.get('/users',async (req,res)=>{
+      const result = await usersCollection.find().toArray()
+      res.send(result)
+    })
+
+    // await client.connect();
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
@@ -35,7 +59,7 @@ async function run() {
     );
   } finally {
     // Ensures that the client will close when you finish/error
-    await client.close();
+    // await client.close();
   }
 }
 run().catch(console.dir);
