@@ -68,7 +68,10 @@ async function run() {
       const email = req.query.email
       // console.log(email)
       const query = {instractorEmail : email}
-      const result = await coursesCollection.find(query).toArray()
+      const options ={
+        sort :{date : -1}
+      }
+      const result = await coursesCollection.find(query,options).toArray()
       res.send(result)
     })
 
