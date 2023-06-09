@@ -76,7 +76,21 @@ async function run() {
     })
     app.get('/isPanding',async (req,res)=>{
       const query ={ status : 'pending'  }
-      const result = await coursesCollection.find(query).toArray()
+      const optons = {
+        sort : {date : -1}
+      }
+      const result = await coursesCollection.find(query,optons).toArray()
+      res.send(result)
+    })
+    app.patch('/approve/:id',async (req,res)=>{
+      const id = req.params.id 
+      const query = { _id : new ObjectId(id) }
+      const options ={
+        $set:{
+          status : 'approve'
+        }
+      }
+      const result = await coursesCollection.updateOne(query,options)
       res.send(result)
     })
 
