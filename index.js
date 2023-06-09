@@ -74,6 +74,11 @@ async function run() {
       const result = await coursesCollection.find(query,options).toArray()
       res.send(result)
     })
+    app.get('/isPanding',async (req,res)=>{
+      const query ={ status : 'pending'  }
+      const result = await coursesCollection.find(query).toArray()
+      res.send(result)
+    })
 
     // user api
     app.post("/users", async (req, res) => {
