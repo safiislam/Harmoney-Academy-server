@@ -51,6 +51,26 @@ async function run() {
       res.send(result)
 
     })
+    app.patch('/course/:id', async(req,res)=>{
+      const data = req.body
+      const id = req.params.id 
+      const query = {_id : new ObjectId(id)}
+      const options = {
+        $set:{
+          ...data
+        }
+      }
+      const result = await coursesCollection.updateOne(query,options)
+      res.send(result)
+      
+    })
+    app.get('/courses',async (req,res)=>{
+      const email = req.query.email
+      // console.log(email)
+      const query = {instractorEmail : email}
+      const result = await coursesCollection.find(query).toArray()
+      res.send(result)
+    })
 
     // user api
     app.post("/users", async (req, res) => {
