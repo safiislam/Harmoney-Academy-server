@@ -93,6 +93,19 @@ async function run() {
       const result = await coursesCollection.updateOne(query,options)
       res.send(result)
     })
+    app.patch('/deny/:id',async (req,res)=>{
+      const id = req.params.id
+      const {feedback} = req.body
+      const query = {_id : new ObjectId(id)}
+      const option ={
+          $set:{
+            feedback: feedback,
+            status: 'deny'
+          }
+      }
+     const result = await coursesCollection.updateOne(query,option)
+     res.send(result)
+    })
 
     // user api
     app.post("/users", async (req, res) => {
