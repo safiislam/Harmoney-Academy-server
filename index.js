@@ -4,6 +4,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_KEY);
 
 // middleware
 app.use(cors());
@@ -25,6 +26,10 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     const coursesCollection = client.db("summary-school").collection("courses");
     const usersCollection = client.db("summary-school").collection("users");
+    const bookingCollection = client.db("summary-school").collection("booking");
+    const paymentsCollection = client
+      .db("summary-school")
+      .collection("payments");
 
     app.post("/jwt", (req, res) => {
       const user = req.body;
@@ -107,7 +112,7 @@ async function run() {
     });
     app.get("/allClass", async (req, res) => {
       const query = {
-        status: 'approve'
+        status: "approve",
       };
       const options = {
         sort: { totalEnroll: -1 },
@@ -115,11 +120,31 @@ async function run() {
       const result = await coursesCollection.find(query, options).toArray();
       res.send(result);
     });
+    app.post("/classBookings", async (req, res) => {
+      const data = req.body;
+      console.log(data);
+      const result = await bookingCollection.insertOne(data);
+      res.send(result);
+    });
+    app.get("/classBookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const options = {
+        sort: { date: -1 },
+      };
+      const result = await bookingCollection.find(query, options).toArray();
+      res.send(result);
+    });
+    app.delete("/classBookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
 
     // user api
     app.post("/users", async (req, res) => {
       const user = req.body;
-
       const query = { email: user.email };
       const isExist = await usersCollection.findOne(query);
       if (isExist) {
@@ -153,6 +178,43 @@ async function run() {
       };
       const result = await usersCollection.updateOne(query, options);
       res.send(result);
+    });
+
+    // stripe banck paypment api
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // payment apis
+    app.post("/payment", async (req, res) => {
+      const data = req.body;
+      const insertResult = await paymentsCollection.insertOne(data);
+      const queryDelete = {
+        _id: { $in: data.bookingsId.map((id) => new ObjectId(id)) },
+      };
+      
+
+      const classesId = data.classId.map(id => new ObjectId(id))
+      const updateResult = await coursesCollection.updateMany(
+        {
+          _id:{ $in : classesId },availableSeats:{ $gt: 0 }
+        },
+        {
+          $inc:{availableSeats : -1 ,totalEnroll : 1}
+        }
+      )
+
+      const deleteResult = await bookingCollection.deleteMany(queryDelete);
+      res.send({ insertResult, deleteResult,updateResult });
     });
 
     // await client.connect();
