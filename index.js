@@ -36,76 +36,85 @@ async function run() {
     });
 
     // courses api
+    // TODO:API DELETE
     app.get("/course", async (req, res) => {
       const query = {};
       const options = {
-        sort: { "totalEnroll" : -1 },
+        sort: { totalEnroll: -1 },
       };
       const result = await coursesCollection.find(query, options).toArray();
       res.send(result);
       // console.log(result)
     });
-    app.post('/course', async(req,res)=>{
-      const data = req.body
-      const result = await coursesCollection.insertOne(data)
-      res.send(result)
-
-    })
-    app.patch('/course/:id', async(req,res)=>{
-      const data = req.body
-      const id = req.params.id 
-      const query = {_id : new ObjectId(id)}
+    app.post("/course", async (req, res) => {
+      const data = req.body;
+      const result = await coursesCollection.insertOne(data);
+      res.send(result);
+    });
+    app.patch("/course/:id", async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
       const options = {
-        $set:{
-          ...data
-        }
-      }
-      const result = await coursesCollection.updateOne(query,options)
-      res.send(result)
-      
-    })
-    app.get('/courses',async (req,res)=>{
-      const email = req.query.email
+        $set: {
+          ...data,
+        },
+      };
+      const result = await coursesCollection.updateOne(query, options);
+      res.send(result);
+    });
+    app.get("/courses", async (req, res) => {
+      const email = req.query.email;
       // console.log(email)
-      const query = {instractorEmail : email}
-      const options ={
-        sort :{date : -1}
-      }
-      const result = await coursesCollection.find(query,options).toArray()
-      res.send(result)
-    })
-    app.get('/isPanding',async (req,res)=>{
-      const query ={ status : 'pending'  }
+      const query = { instractorEmail: email };
+      const options = {
+        sort: { date: -1 },
+      };
+      const result = await coursesCollection.find(query, options).toArray();
+      res.send(result);
+    });
+    app.get("/isPanding", async (req, res) => {
+      const query = { status: "pending" };
       const optons = {
-        sort : {date : -1}
-      }
-      const result = await coursesCollection.find(query,optons).toArray()
-      res.send(result)
-    })
-    app.patch('/approve/:id',async (req,res)=>{
-      const id = req.params.id 
-      const query = { _id : new ObjectId(id) }
-      const options ={
-        $set:{
-          status : 'approve'
-        }
-      }
-      const result = await coursesCollection.updateOne(query,options)
-      res.send(result)
-    })
-    app.patch('/deny/:id',async (req,res)=>{
-      const id = req.params.id
-      const {feedback} = req.body
-      const query = {_id : new ObjectId(id)}
-      const option ={
-          $set:{
-            feedback: feedback,
-            status: 'deny'
-          }
-      }
-     const result = await coursesCollection.updateOne(query,option)
-     res.send(result)
-    })
+        sort: { date: -1 },
+      };
+      const result = await coursesCollection.find(query, optons).toArray();
+      res.send(result);
+    });
+    app.patch("/approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const options = {
+        $set: {
+          status: "approve",
+        },
+      };
+      const result = await coursesCollection.updateOne(query, options);
+      res.send(result);
+    });
+    app.patch("/deny/:id", async (req, res) => {
+      const id = req.params.id;
+      const { feedback } = req.body;
+      const query = { _id: new ObjectId(id) };
+      const option = {
+        $set: {
+          feedback: feedback,
+          status: "deny",
+        },
+      };
+      const result = await coursesCollection.updateOne(query, option);
+      res.send(result);
+    });
+    app.get("/allClass", async (req, res) => {
+      const query = {
+        status: 'approve'
+      };
+      const options = {
+        sort: { totalEnroll: -1 },
+      };
+      const result = await coursesCollection.find(query, options).toArray();
+      res.send(result);
+    });
 
     // user api
     app.post("/users", async (req, res) => {
@@ -124,29 +133,27 @@ async function run() {
       res.send(result);
     });
 
-    app.patch('/users/admin/:id', async(req,res)=>{
+    app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
-      const  query = {_id: new ObjectId(id)}
+      const query = { _id: new ObjectId(id) };
       const option = {
-        $set:{
-          role:'admin'
-        }
-      } 
-      const result = await usersCollection.updateOne(query,option)
-
-    })
-    app.patch('/users/instructor/:id',async (req,res)=>{
-      const id = req.params.id
-      const query = {_id: new ObjectId(id)}
-      const options ={
-        $set:{
-          role:'instructor'
-        }
-      }
-      const result = await usersCollection.updateOne(query,options)
-      res.send(result)
-    })
-
+        $set: {
+          role: "admin",
+        },
+      };
+      const result = await usersCollection.updateOne(query, option);
+    });
+    app.patch("/users/instructor/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const options = {
+        $set: {
+          role: "instructor",
+        },
+      };
+      const result = await usersCollection.updateOne(query, options);
+      res.send(result);
+    });
 
     // await client.connect();
     // Send a ping to confirm a successful connection
