@@ -10,21 +10,20 @@ const stripe = require("stripe")(process.env.STRIPE_KEY);
 app.use(cors());
 app.use(express.json());
 
-const verifyJWT = async (req,res,next)=>{
-  const authorization = req.headers.authorization 
-  if(!authorization){
-    return res.status(401).send({error: true , message: 'unauthorized'})
+const verifyJWT =  (req, res, next) => {
+  const authorization = req.headers.authorization;
+  if (!authorization) {
+    return res.status(401).send({ error: true, message: "unauthorized" });
   }
-  const token = authorization.split(' ')[1]
-  jwt.verify(token,process.env.JWT_SECRET_KEY,(error,decoded)=>{
-    if(error){
-      return res.status(401).send({error:true , message : 'unauthorized'})
+  const token = authorization.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET_KEY, (error, decoded) => {
+    if (error) {
+      return res.status(401).send({ error: true, message: "unauthorized" });
     }
-    req.decoded = decoded
-    next()
-  })
-
-}
+    req.decoded = decoded;
+    next();
+  });
+};
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.yrhbvyy.mongodb.net/?retryWrites=true&w=majority`;
@@ -55,15 +54,17 @@ async function run() {
       });
       res.send({ token });
     });
-    const verifyAdmin = async (req,res,next)=>{
-      const email = req.decoded.email 
-      const query = {email : email}
-      const findUser = await usersCollection.findOne(query)
-      if(findUser?.role !== 'admin'){
-        return res.status(403).send({error : true , message:'forbidden access'})
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const findUser = await usersCollection.findOne(query);
+      if (findUser?.role !== "admin") {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
-      next()
-    }
+      next();
+    };
 
     // courses api
     // TODO:API DELETE
@@ -103,7 +104,7 @@ async function run() {
       const result = await coursesCollection.find(query, options).toArray();
       res.send(result);
     });
-    app.get("/isPanding", verifyJWT,verifyAdmin,  async (req, res) => {
+    app.get("/isPanding", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { status: "pending" };
       const optons = {
         sort: { date: -1 },
@@ -151,11 +152,13 @@ async function run() {
       const result = await bookingCollection.insertOne(data);
       res.send(result);
     });
-    app.get("/classBookings",verifyJWT, async (req, res) => {
+    app.get("/classBookings", verifyJWT, async (req, res) => {
       const email = req.query.email;
-      const decodedEmail = req.decoded.email 
-      if(email !== decodedEmail){
-        return res.status(403).send({error:true , message:'unAuthorized access'})
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "unAuthorized access" });
       }
       const query = { email: email };
       const options = {
@@ -182,21 +185,23 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
-    app.get("/users",verifyJWT,verifyAdmin, async (req, res) => {
+    app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
       const result = await usersCollection.find().toArray();
       res.send(result);
     });
-    app.get('/userRole', verifyJWT, async(req,res)=>{
-      const email = req.query.email
-      const decodedEmail = req.decoded.email
-      if(email !== decodedEmail){
-        return res.status(403).send({error: true ,message :'forbidden access'})
+    app.get("/userRole",verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
 
-      const query = { email : email }
-      const result = await usersCollection.findOne(query)
-      res.send(result)
-    })
+      const query = { email: decodedEmail };
+      const result = await usersCollection.findOne(query);
+      res.send(result);
+    });
 
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
@@ -219,11 +224,11 @@ async function run() {
       const result = await usersCollection.updateOne(query, options);
       res.send(result);
     });
-    app.get('/instructor',async(req,res)=>{
-      const query = {role : 'instructor'}
-      const result = await usersCollection.find(query).toArray()
-      res.send(result)
-    })
+    app.get("/instructor", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await usersCollection.find(query).toArray();
+      res.send(result);
+    });
 
     // stripe banck paypment api
     app.post("/create-payment-intent", async (req, res) => {
@@ -246,34 +251,36 @@ async function run() {
       const queryDelete = {
         _id: { $in: data.bookingsId.map((id) => new ObjectId(id)) },
       };
-      
 
-      const classesId = data.classId.map(id => new ObjectId(id))
+      const classesId = data.classId.map((id) => new ObjectId(id));
       const updateResult = await coursesCollection.updateMany(
         {
-          _id:{ $in : classesId },availableSeats:{ $gt: 0 }
+          _id: { $in: classesId },
+          availableSeats: { $gt: 0 },
         },
         {
-          $inc:{availableSeats : -1 ,totalEnroll : 1}
+          $inc: { availableSeats: -1, totalEnroll: 1 },
         }
-      )
+      );
 
       const deleteResult = await bookingCollection.deleteMany(queryDelete);
-      res.send({ insertResult, deleteResult,updateResult });
+      res.send({ insertResult, deleteResult, updateResult });
     });
-    app.get('/payment', verifyJWT, async(req,res)=>{
-      const email = req.query.email
-      const decodedEmail = req.decoded.email
-      if(email !== decodedEmail){
-        return res.status(403).send({error: true ,message :'forbidden access'})
+    app.get("/payment", verifyJWT, async (req, res) => {
+      const email = req.query.email;
+      const decodedEmail = req.decoded.email;
+      if (email !== decodedEmail) {
+        return res
+          .status(403)
+          .send({ error: true, message: "forbidden access" });
       }
-      const query = {email :email}
+      const query = { email: email };
       const options = {
-        $sort :  { date : -1  }
-      }
-      const result = await paymentsCollection.find(query,options).toArray();
-      res.send(result)
-    })
+        $sort: { date: -1 },
+      };
+      const result = await paymentsCollection.find(query, options).toArray();
+      res.send(result);
+    });
 
     // await client.connect();
     // Send a ping to confirm a successful connection
